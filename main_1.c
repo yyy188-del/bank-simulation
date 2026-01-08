@@ -31,6 +31,7 @@ typedef struct {
     int id;
     int isBusy;         // 0=空闲, 1=忙碌
     double finishTime;  // 当前服务结束时间
+    Customer* currentCustomer;  //正在服务的顾客
 } Window;
 
 // 事件类型
@@ -180,7 +181,7 @@ void try_assign_windows(Queue* Q1, Queue* Q2, Window* windows, int numWindows) {
         if (canService) {
             c = q_pop(Q1);
             windows[i].isBusy = 1;
-            
+            windows[i].currentCustomer = c;  // 设置当前客户
             if (c->type == TYPE_WITHDRAW) {
                 G_TotalFunds -= c->amount;
             }
@@ -362,6 +363,7 @@ int main() {
             G_ServedCount++;
 
             windows[winId].isBusy = 0;
+            windows[winId].currentCustomer = NULL;  // 清除当前客户
 
             printf("[%.2f] 客户%d 离开 (窗口%d释放), 逗留:%.2f\n",
                    G_CurrentTime, c->id, winId+1, stayTime);
@@ -382,6 +384,28 @@ int main() {
     G_CurrentTime = G_CloseTime;
     
     printf("\n[%.2f] 银行关门，处理剩余排队客户...\n", G_CloseTime);
+
+        // 统计仍在服务的窗口（即正在办理业务的客户）
+    for (int i = 0; i < N_Win; i++) {
+        if (windows[i].isBusy) {
+            // 计算这个客户的逗留时间（到关门时间）
+            Customer* c = windows[i].currentCustomer; // 需要Window结构体中有这个字段
+            if (c != NULL) {
+                double stay = G_CloseTime - c->arriveTime;
+                G_TotalStayTime += stay;
+                G_ServedCount++;
+                printf("  客户%d (正在服务) 在关门时完成服务，逗留:%.2f分钟\n", 
+                       c->id, stay);
+                
+                // 如果是存款，需要更新资金
+                if (c->type == TYPE_DEPOSIT) {
+                    G_TotalFunds += c->amount;
+                }
+                free(c);
+            }
+            windows[i].isBusy = 0;
+        }
+    }
     
     // 清空 Q1
     while (!q_empty(&Q1)) {
