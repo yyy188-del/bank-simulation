@@ -342,8 +342,7 @@ int main()
     int N_Win;
     double fund;
 
-    printf("=== 银行业务模拟 (完全动态客户生成) ===\n");
-    printf("说明：客户在整个营业时间内随机到达，没有固定总数\n");
+    printf("=== 银行业务模拟===\n");
 
     printf("输入客户到达率(每分钟多少个客户，推荐0.5-2.0): ");
     scanf("%lf", &arrivalRate);
